@@ -80,6 +80,7 @@ router.post('/username', (req, res) => {
     return;
   } else {
     //DB에서 등록 요청한 username이 있는지 확인을 한다.
+    //블록체인 처리
     let user = db.get('users')
       .find({ username: username })
       .value();
@@ -127,6 +128,10 @@ router.post('/password', (req, res) => {
     res.status(401).json({error: 'Enter username first.'});
     return;
   }
+  //db에서 id로 사용자 찾아서 비밀번호 일치여부 확인
+  //id랑 지문이랑 일치하는지. 
+  //블록체인.
+
 
   //로그인이 되었다는 의미로 cookie에 yes룰 표시해줌
   res.cookie('signed-in', 'yes');

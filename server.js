@@ -110,8 +110,9 @@ app.get('/.well-known/assetlinks.json', (req, res) => {
 app.use('/auth', auth);
 
 // listen for req :)
-const port = process.env.GLITCH_DEBUGGER ? null : 8443;
+const port = process.env.GLITCH_DEBUGGER ? null : 443;
 console.log(port);
+
 /*
 const listener = app.listen(port || process.env.PORT, () => {
   console.log('Your app is listening on port ' + listener.address().port);
@@ -119,8 +120,9 @@ const listener = app.listen(port || process.env.PORT, () => {
 */
 
 var options = {   
-	key: fs.readFileSync(__dirname + '\\keyfile\\key.pem'),
-	cert: fs.readFileSync(__dirname + '\\keyfile\\cert.pem')
+	ca: fs.readFileSync(__dirname +'/keyfile/ca_bundle.crt'),
+  key: fs.readFileSync(__dirname +'/keyfile/private.key'),
+  cert: fs.readFileSync(__dirname +'/keyfile/certificate.crt'),
 };
 
 
