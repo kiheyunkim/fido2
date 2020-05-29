@@ -58,6 +58,9 @@
         const form = new FormData(e.target);
         const cred = {};
         form.forEach((v, k) => cred[k] = v);
+        console.log(cred);
+        
+        /*
         _fetch(e.target.action, cred)
         .then(user => { 
           console.log(user);
@@ -65,16 +68,20 @@
           location.href = '/home?type=1';
         })
         .catch(e => alert(e.message || e));
+        */
+        authenticate({username:cred['username']}).then(user => {
+          console.log(user);
+        if (user) {
+          location.href = '/home';
+        }
+          }).catch(e => {
+            console.error(e);
+            alert('Authentication failed. Use password to sign-in.');
+          });
+          
       });
 
-      authenticate({}).then(user => {
-        if (user) {
-          location.href = '/home?type=2';
-        }
-      }).catch(e => {
-        console.error(e);
-        alert('Authentication failed. Use password to sign-in.');
-      });
+      
     </script>
   </body>
 </html>

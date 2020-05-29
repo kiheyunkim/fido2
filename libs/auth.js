@@ -387,9 +387,10 @@ router.post('/registerResponse', csrfCheck, sessionCheck, async (req, res) => {
 router.post('/signinRequest', csrfCheck, async (req, res) => {
   try {
     const user = db.get('users')
-      .find({ username: req.cookies.username })
-      .value();
-
+    .find({ username: req.body.username })
+    .value();
+   
+    
     if (!user) {
       // Send empty response if user is not registered yet.
       res.json({error: 'User not found.'});
@@ -397,7 +398,7 @@ router.post('/signinRequest', csrfCheck, async (req, res) => {
     }
 
     const credId = req.query.credId;
-
+    console.log(credId);
     const response = await f2l.assertionOptions();
 
     // const response = {};
@@ -407,6 +408,7 @@ router.post('/signinRequest', csrfCheck, async (req, res) => {
 
     response.allowCredentials = [];
     for (let cred of user.credentials) {
+      console.log(cred);
       // When credId is not specified, or matches the one specified
       if (!credId || cred.credId == credId) {
         response.allowCredentials.push({

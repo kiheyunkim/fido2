@@ -22,6 +22,7 @@ const hbs = require('hbs');
 const auth = require('./libs/auth');
 const app = express();
 const fs = require('fs');
+const session = require('express-session');
 
 const https = require('https');
 
@@ -31,6 +32,13 @@ app.set('views', './views');
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.static('public'));
+app.use(session({
+  secret: 'keyboard cat',
+  resave: false,
+  saveUninitialized: false,
+  cookie: { secure: true }
+}));
+
 
 app.use((req, res, next) => {
   if (req.get('x-forwarded-proto') &&
@@ -111,13 +119,6 @@ app.use('/auth', auth);
 
 // listen for req :)
 const port = process.env.GLITCH_DEBUGGER ? null : 443;
-console.log(port);
-
-/*
-const listener = app.listen(port || process.env.PORT, () => {
-  console.log('Your app is listening on port ' + listener.address().port);
-});
-*/
 
 var options = {   
 	ca: fs.readFileSync(__dirname +'/keyfile/ca_bundle.crt'),
