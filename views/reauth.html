@@ -60,7 +60,7 @@
         form.forEach((v, k) => cred[k] = v);
         console.log(cred);
         
-        /*
+        
         _fetch(e.target.action, cred)
         .then(user => { 
           console.log(user);
@@ -68,7 +68,7 @@
           location.href = '/home?type=1';
         })
         .catch(e => alert(e.message || e));
-        */
+        
         authenticate({username:cred['username']}).then(user => {
           console.log(user);
         if (user) {
