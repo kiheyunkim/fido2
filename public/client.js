@@ -42,15 +42,14 @@ export const registerCredential = async (opts) => {
   if (!window.PublicKeyCredential) {
     throw 'WebAuthn not supported on this browser.';
   }
-  console.log('hi');
+
   const UVPAA = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
   if (!UVPAA) {
     throw 'User Verifying Platform Authenticator not available.';
   }
-  console.log('hi2');
 
   const options = await _fetch('/auth/registerRequest', opts);
-  console.log('hi3');
+  
   options.user.id = base64url.decode(options.user.id);
   options.challenge = base64url.decode(options.challenge);
 
