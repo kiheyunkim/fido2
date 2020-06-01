@@ -15,6 +15,7 @@
  * limitations under the License
  */
 const express = require('express');
+const session = require('express-session');
 const router = express.Router();
 const crypto = require('crypto');
 const { Fido2Lib } = require('fido2-lib');
@@ -32,9 +33,9 @@ if (!fs.existsSync('./.data')) {
 const FileSync = require('lowdb/adapters/FileSync');
 const adapter = new FileSync('.data/db.json');
 const db = low(adapter);
-db.defaults({
-  users: []
-}).write();
+
+router.use(express.json());
+
 
 const f2l = new Fido2Lib({
     timeout: 30*1000*60,
@@ -44,7 +45,9 @@ const f2l = new Fido2Lib({
     cryptoParams: [-7]
 });
 
-router.use(express.json());
+db.defaults({
+  users: []
+}).write();
 
 const csrfCheck = (req, res, next) => {
   if (req.header('X-Requested-With') != 'XMLHttpRequest') {
@@ -66,135 +69,95 @@ const sessionCheck = (req, res, next) => {
   next();
 };
 
-router.post('/registerCredentials',csrfCheck, (request,response)=>{
-    const username = request.body.info.username;
-    const identifypart1 = request.body.info.identifypart1;
-    const identifypart2 = request.body.info.identifypart2;
-
-    //Todo : 블록체인에 이름과 주민번호를 이용해서 찾는다.
-    const user = db.get('users')
-                .find({username:username, identify :(identifypart1 + '-' + identifypart2)})
-                .value();
-    ////////////////////////////////////////////////////
-
-    if(user !== undefined){
-      response.json({result:'Already Exist'});
-    }
-
-    
-    //base64로 변환한 32자리의 랜덤 바이트를 id로 집어 넣는다.
-    //이름은 특별한 의미가 없음. 그냥 base64로 암호화 한다는 것만 중요.
-    user = {
-      username: username,
-      id: coerceToBase64Url(crypto.randomBytes(32), 'user.id'),
-      identify:identifypart1 + "-" + identifypart2,
-      credentials: []
-    }
-
-    try {
-      const res = await f2l.attestationOptions();
-      res.user = {
-        displayName: 'No name',
-        id: user.id,
-        name: user.username
-      };
-      res.challenge = coerceToBase64Url(res.challenge, 'challenge');
-      res.cookie('challenge', res.challenge);
-      res.excludeCredentials = [];
-      if (user.credentials.length > 0) {
-        for (let cred of user.credentials) {
-          res.excludeCredentials.push({
-            id: cred.credId,
-            type: 'public-key',
-            transports: ['internal']
-          });
-        }
-      }
-      res.pubKeyCredParams = [];
-      const params = [-7, -257];
-      for (let param of params) {
-        res.pubKeyCredParams.push({type:'public-key', alg: param});
-      }
-      const as = {}; // authenticatorSelection
-      const aa = request.body.opts.authenticatorSelection.authenticatorAttachment;
-      const rr = request.body.opts.authenticatorSelection.requireResidentKey;
-      const uv = request.body.opts.authenticatorSelection.userVerification;
-      const cp = request.body.opts.attestation; // attestationConveyancePreference
-      let asFlag = false;
-  
-      if (aa && (aa == 'platform' || aa == 'cross-platform')) {
-        asFlag = true;
-        as.authenticatorAttachment = aa;
-      }
-      if (rr && typeof rr == 'boolean') {
-        asFlag = true;
-        as.requireResidentKey = rr;
-      }
-      if (uv && (uv == 'required' || uv == 'preferred' || uv == 'discouraged')) {
-        asFlag = true;
-        as.userVerification = uv;
-      }
-      if (asFlag) {
-        res.authenticatorSelection = as;
-      }
-      if (cp && (cp == 'none' || cp == 'indirect' || cp == 'direct')) {
-        res.attestation = cp;
-      }
-
-      //Todo : 블록체인에 사용자 정보를 만들어서 넣는다.
-      //DB에 해당 정보 기록
-      db.get('users')
-        .push(user)
-        .write();
-      ////////////////////////////////////////////////////
-
-      response.json(res);
-
-    } catch (e) {
-      response.status(400).send({ error: e });
-    }
-});
-
-
-
-
-
-
-
-
-
-router.get('/register',(request,response)=>{
+router.post('/registerAuth',async (request,response)=>{
+  const identifyPart1 = request.body.identifyPart1;
+  const identifyPart2 = request.body.identifyPart2;
+  const indentity = identifyPart1 + '-' + identifyPart2;
   const username = request.body.username;
-  const identifypart1 = 1//= request.body.user.idp1;
-  const identifypart2  = 1//= request.body.user.idp2;
-  //인증 과정이라고  생각
+  const id = request.body.id;
 
-  if(username === undefined || identifypart1 === undefined || identifypart2 === undefined
-    || !Number.isInteger(identifypart1) || !Number.isInteger(identifypart2) || identifypart1.length !== 6 
-    || identifypart2.length !== 7){
- 
-    response.json({result:"no"});
+  //ToDo : ID 중복 확인///////////////////////////
+  let user = db.get('users')
+                .find({ id: id })
+                .value();
+  ////////////////////////////////////////////////
+
+  if(user !== undefined){
+    response.json({result:"existed_id"});
     return;
   }
 
-  //블록체인 -> 전체 조회를 통해서 가져옴
-  //있는지를 확인하기 위함
-  let user = db.get('users').value();
+  let info = db.get('users')
+                .find({username:username, identify: identify})
+                .value();
 
-  //가져온 데이터를 통해서 동일한 주민번호가 있는지를 검사함.
-  if(undefined !== user.find(element=>element.identify === (identifypart1 + "-" + identifypart2))){
-    response.json({result:"isExist"});
+  if(info !== undefined){
+    response.json({result:"existed_identity"});
     return;
   }
 
-  //등록 절차 시작
   user = {
     username: username,
-    //base64로 변환한 32자리의 랜덤 바이트를 id로 집어 넣는다.
-    //이름은 특별한 의미가 없음. 그냥 base64로 암호화 한다는 것만 중요.
-    id: coerceToBase64Url(crypto.randomBytes(32), 'user.id'),
-    identify:identifypart1 + "-" + identifypart2,
-    credentials: []
+    id : id,
+    indentity: indentity,
+    credentials: {}
+  }
+
+  try {
+    const res = await f2l.attestationOptions();
+    res.user = {
+      displayName: 'No name',
+      id: user.id,
+      name: user.username
+    };
+    res.challenge = coerceToBase64Url(res.challenge, 'challenge');
+    res.cookie('challenge', res.challenge);
+    res.excludeCredentials = [];
+    
+    
+    if (user.credentials.length > 0) {
+      for (let cred of user.credentials) {
+        res.excludeCredentials.push({
+          id: cred.credId,
+          type: 'public-key',
+          transports: ['internal']
+        });
+      }
+    }
+    res.pubKeyCredParams = [];
+    const params = [-7, -257];
+    for (let param of params) {
+      response.pubKeyCredParams.push({type:'public-key', alg: param});
+    }
+    const as = {}; // authenticatorSelection
+    const aa = request.body.authenticatorSelection.authenticatorAttachment;
+    const rr = request.body.authenticatorSelection.requireResidentKey;
+    const uv = request.body.authenticatorSelection.userVerification;
+    const cp = request.body.attestation; // attestationConveyancePreference
+    let asFlag = false;
+
+    if (aa && (aa == 'platform' || aa == 'cross-platform')) {
+      asFlag = true;
+      as.authenticatorAttachment = aa;
+    }
+    if (rr && typeof rr == 'boolean') {
+      asFlag = true;
+      as.requireResidentKey = rr;
+    }
+    if (uv && (uv == 'required' || uv == 'preferred' || uv == 'discouraged')) {
+      asFlag = true;
+      as.userVerification = uv;
+    }
+    if (asFlag) {
+      res.authenticatorSelection = as;
+    }
+    if (cp && (cp == 'none' || cp == 'indirect' || cp == 'direct')) {
+      res.attestation = cp;
+    }
+
+    res.json(res);
+  } catch (e) {
+    res.status(400).send({ error: e });
   }
 
 
@@ -203,7 +166,6 @@ router.get('/register',(request,response)=>{
 
 
 });
-
 
 /**
  * Check username, create a new account if it doesn't exist.
@@ -231,7 +193,7 @@ router.post('/username', (req, res) => {
         //base64로 변환한 32자리의 랜덤 바이트를 id로 집어 넣는다.
         //이름은 특별한 의미가 없음. 그냥 base64로 암호화 한다는 것만 중요.
         id: coerceToBase64Url(crypto.randomBytes(32), 'user.id'),
-        credentials: []
+        credentials: {}
       }
       //새로운 username을 user 객체로 만든뒤 db에 삽입한다.
       db.get('users')
@@ -372,6 +334,7 @@ router.get('/resetDB', (req, res) => {
      attestation: ('none'|'indirect'|'direct')
  * }```
  **/
+/*
 router.post('/registerRequest', csrfCheck, sessionCheck, async (req, res) => {
   const username = req.cookies.username;
   const user = db.get('users')
@@ -432,6 +395,7 @@ router.post('/registerRequest', csrfCheck, sessionCheck, async (req, res) => {
     res.status(400).send({ error: e });
   }
 });
+*/
 
 /**
  * Register user credential.
@@ -448,11 +412,12 @@ router.post('/registerRequest', csrfCheck, sessionCheck, async (req, res) => {
      }
  * }```
  **/
-router.post('/registerResponse', csrfCheck, sessionCheck, async (req, res) => {
-  const username = req.cookies.username;
+router.post('/registerResponse', async (req, res) => {
+  const id = req.session.name;
+  console.log("hi my id : " + id);
   const challenge = coerceToArrayBuffer(req.cookies.challenge, 'challenge');
-  const credId = req.body.id;
-  const type = req.body.type;
+  //const credId = req.body.id;
+  //const type = req.body.type;
 
   try {
     const clientAttestationResponse = { response: {} };
@@ -488,13 +453,16 @@ router.post('/registerResponse', csrfCheck, sessionCheck, async (req, res) => {
     };
 
     const user = db.get('users')
-      .find({ username: username })
+      .find({ id: id })
       .value();
 
-    user.credentials.push(credential);
+      console.log(user);
+    
+
+    user.credential = credential;
 
     db.get('users')
-      .find({ username: username })
+      .find({ id: id })
       .assign(user)
       .write();
 
@@ -503,6 +471,7 @@ router.post('/registerResponse', csrfCheck, sessionCheck, async (req, res) => {
     // Respond with user info
     res.json(user);
   } catch (e) {
+    console.log(e);
     res.clearCookie('challenge');
     res.status(400).send({ error: e.message });
   }
@@ -536,7 +505,6 @@ router.post('/signinRequest', csrfCheck, async (req, res) => {
     }
 
     const credId = req.query.credId;
-    console.log(credId);
     const response = await f2l.assertionOptions();
 
     // const response = {};
@@ -546,7 +514,6 @@ router.post('/signinRequest', csrfCheck, async (req, res) => {
 
     response.allowCredentials = [];
     for (let cred of user.credentials) {
-      console.log(cred);
       // When credId is not specified, or matches the one specified
       if (!credId || cred.credId == credId) {
         response.allowCredentials.push({
@@ -635,5 +602,88 @@ router.post('/signinResponse', csrfCheck, async (req, res) => {
     res.status(400).json({ error: e });
   }
 });
+
+
+
+ router.post('/registerRequest', /*csrfCheck, sessionCheck,*/ async (req, res) => {
+   console.log(req.body.opts.info);
+  const id = req.body.opts.info.id;
+  const username = req.body.opts.info.username;
+  const idPart1 = req.body.opts.info.idPart1;
+  const idPart2 = req.body.opts.info.idPart2;
+  req.session.name = id;
+
+  //id 중복 검사
+
+  //본인 정보 중복 검사.
+
+  let user = {
+    id:id,
+    username: username,
+    identity : (idPart1 + "-" + idPart2),
+    credential: {}
+  }
+  try {
+    const response = await f2l.attestationOptions();
+    response.user = {
+      displayName: 'No name',
+      id: user.id,
+      name: user.username
+    };
+
+    response.challenge = coerceToBase64Url(response.challenge, 'challenge');
+    res.cookie('challenge', response.challenge);
+     
+    /* response.excludeCredentials = [];
+    if (user.credentials.length > 0) {
+      for (let cred of user.credentials) {
+        response.excludeCredentials.push({
+          id: cred.credId,
+          type: 'public-key',
+          transports: ['internal']
+        });
+      }
+    }  */
+    response.pubKeyCredParams = [];
+    const params = [-7, -257];
+    for (let param of params) {
+      response.pubKeyCredParams.push({type:'public-key', alg: param});
+    }
+    const as = {}; // authenticatorSelection
+    const aa = req.body.opts.opts.authenticatorSelection.authenticatorAttachment;
+    const rr = req.body.opts.opts.authenticatorSelection.requireResidentKey;
+    const uv = req.body.opts.opts.authenticatorSelection.userVerification;
+    const cp = req.body.opts.opts.attestation; // attestationConveyancePreference
+    let asFlag = false;
+
+    if (aa && (aa == 'platform' || aa == 'cross-platform')) {
+      asFlag = true;
+      as.authenticatorAttachment = aa;
+    }
+    if (rr && typeof rr == 'boolean') {
+      asFlag = true;
+      as.requireResidentKey = rr;
+    }
+    if (uv && (uv == 'required' || uv == 'preferred' || uv == 'discouraged')) {
+      asFlag = true;
+      as.userVerification = uv;
+    }
+    if (asFlag) {
+      response.authenticatorSelection = as;
+    }
+    if (cp && (cp == 'none' || cp == 'indirect' || cp == 'direct')) {
+      response.attestation = cp;
+    }
+
+    db.get('users')
+    .push(user)
+    .write();
+
+    res.json(response);
+  } catch (e) {
+    res.status(400).send({ error: e });
+  }
+});
+
 
 module.exports = router;

@@ -53,19 +53,15 @@ export const registerCredential = async (opts) => {
   options.user.id = base64url.decode(options.user.id);
   options.challenge = base64url.decode(options.challenge);
 
-  console.log('hi4');
   if (options.excludeCredentials) {
     for (let cred of options.excludeCredentials) {
       cred.id = base64url.decode(cred.id);
     }
   }
-  console.log('hi5');
   
   const cred = await navigator.credentials.create({
     publicKey: options
   });
-
-  console.log('hi6');
 
   const credential = {};
   credential.id =     cred.id;
@@ -95,27 +91,20 @@ export const authenticate = async (opts) => {
     return Promise.resolve(null)
   } 
 
-  console.log('hi2');
   const UVPAA = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
   if (!UVPAA) {
     console.info('User Verifying Platform Authenticator not available.');
     return Promise.resolve(null);
   }
 
-  console.log('hi3');
   let url = '/auth/signinRequest';
   const credId = localStorage.getItem(`credId`);
   if (credId) {
     url += `?credId=${encodeURIComponent(credId)}`;
   }
-  console.log(credId);
-  console.log(encodeURIComponent(credId));
 
-  console.log('start ok');
   const options = await _fetch(url, opts);
-  console.log(options);
-  console.log('ok');
-
+  
   if (options.allowCredentials.length === 0) {
     console.info('No registered credentials found.');
     return Promise.resolve(null);

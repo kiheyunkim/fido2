@@ -31,12 +31,13 @@ app.engine('html', hbs.__express);
 app.set('views', './views');
 app.use(cookieParser());
 app.use(express.json());
+app.use(express.urlencoded({extended:true}));
 app.use(express.static('public'));
 app.use(session({
   secret: 'keyboard cat',
   resave: false,
   saveUninitialized: false,
-  cookie: { secure: true }
+  cookie: { secure: false }
 }));
 
 
