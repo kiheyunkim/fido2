@@ -606,16 +606,32 @@ router.post('/signinResponse', csrfCheck, async (req, res) => {
 
 
  router.post('/registerRequest', /*csrfCheck, sessionCheck,*/ async (req, res) => {
-   console.log(req.body.opts.info);
   const id = req.body.opts.info.id;
   const username = req.body.opts.info.username;
   const idPart1 = req.body.opts.info.idPart1;
   const idPart2 = req.body.opts.info.idPart2;
-  req.session.name = id;
 
-  //id 중복 검사
+  //세션에 가입 요청한 id 기록
+  req.session.name = id; 
+  //ToDo: id 중복 검사 - 블록체인에서 검사할 것.
+  let checker = db.get('users')
+            .find({id:id})
+            .value();
+  
+  if(checker !== undefined){
+    res.status(400).send({ error: "existed_id" });
+    return;
+  }
 
   //본인 정보 중복 검사.
+  //ToDo: id 중복 검사 - 블록체인에서 검사할 것.
+  let checkInfo = db.get('users')
+                    .find({username:username, identity:(idPart1 + "-" + idPart2)})
+                    .value();
+  if(checkInfo !== undefined){
+    res.status(400).send({ error: "existed_info" });
+    return;
+  }
 
   let user = {
     id:id,
@@ -623,6 +639,7 @@ router.post('/signinResponse', csrfCheck, async (req, res) => {
     identity : (idPart1 + "-" + idPart2),
     credential: {}
   }
+
   try {
     const response = await f2l.attestationOptions();
     response.user = {
@@ -633,17 +650,7 @@ router.post('/signinResponse', csrfCheck, async (req, res) => {
 
     response.challenge = coerceToBase64Url(response.challenge, 'challenge');
     res.cookie('challenge', response.challenge);
-     
-    /* response.excludeCredentials = [];
-    if (user.credentials.length > 0) {
-      for (let cred of user.credentials) {
-        response.excludeCredentials.push({
-          id: cred.credId,
-          type: 'public-key',
-          transports: ['internal']
-        });
-      }
-    }  */
+
     response.pubKeyCredParams = [];
     const params = [-7, -257];
     for (let param of params) {
