@@ -25,7 +25,7 @@ const _fetch = async (path, payload = '') => {
   };
 
 
-let register = async (opts, info)=>{
+let register = async (opts)=>{
     if (!window.PublicKeyCredential) {
         throw 'WebAuthn not supported on this browser.';
     }
@@ -35,7 +35,7 @@ let register = async (opts, info)=>{
         throw 'User Verifying Platform Authenticator not available.';
     }
     
-    const options = await _fetch('/auth/registerRequest', {opts, info});
+    const options = await _fetch('/auth/registerRequest', opts);
     
     options.user.id = base64url.decode(options.user.id);
     options.challenge = base64url.decode(options.challenge);
@@ -77,15 +77,13 @@ $(document).ready(()=>{
             authenticatorSelection: {
               authenticatorAttachment: 'platform',
               userVerification: 'required'
-            }
-        }
-        let info = {
-              id: id,
+            },
+            id: id,
               username : username,
               idPart1 : idNum1,
               idPart2 : idNum2
         }
 
-        register({opts, info});
+        register(opts);
     });
 });
