@@ -43,8 +43,7 @@ let register = async (opts, info)=>{
     const cred = await navigator.credentials.create({
         publicKey: options
     });
-    console.log("hihihihihi");
-    console.log(cred);
+
     const credential = {};
     credential.id =     cred.id;
     credential.type =   cred.type;
@@ -63,8 +62,6 @@ let register = async (opts, info)=>{
     
     localStorage.setItem(`credId`, credential.id);
 
-    console.log('ok');
-    console.log(credential); 
     return await _fetch('/auth/registerResponse' , credential);
 }
 
@@ -81,15 +78,14 @@ $(document).ready(()=>{
               authenticatorAttachment: 'platform',
               userVerification: 'required'
             }
-          }
+        }
         let info = {
               id: id,
               username : username,
               idPart1 : idNum1,
               idPart2 : idNum2
-          }
+        }
 
-          console.log(info);
         register({opts, info});
     });
 });
