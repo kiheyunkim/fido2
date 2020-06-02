@@ -84,8 +84,8 @@ export const registerCredential = async (opts) => {
   return await _fetch('/auth/registerResponse' , credential);
 };
 
-export const authenticate = async (opts) => {
-  console.log('hi1');
+export const authenticate = async (opts, id) => {
+  //console.log('hi1');
   if (!window.PublicKeyCredential) {
     console.info('WebAuthn not supported on this browser.');
     return Promise.resolve(null)
@@ -98,15 +98,17 @@ export const authenticate = async (opts) => {
   }
 
   let url = '/auth/signinRequest';
+  /*
   const credId = localStorage.getItem(`credId`);
   if (credId) {
     url += `?credId=${encodeURIComponent(credId)}`;
   }
-
-  const options = await _fetch(url, opts);
+  */
+  let option = {opts, id};
+  const options = await _fetch(url, option);
   
   if (options.allowCredentials.length === 0) {
-    console.info('No registered credentials found.');
+    alert("등록되지 않은 아이디 입니다.");
     return Promise.resolve(null);
   }
 
@@ -142,7 +144,7 @@ export const authenticate = async (opts) => {
     };
   }
 
-  localStorage.setItem(`credId`, credential.id);
+  //localStorage.setItem(`credId`, credential.id);
 
   return await _fetch(`/auth/signinResponse`, credential);
 };

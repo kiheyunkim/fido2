@@ -25,7 +25,7 @@ const _fetch = async (path, payload = '') => {
   };
 
 
-let register = async (opts, info)=>{
+let register = async (opts)=>{
     if (!window.PublicKeyCredential) {
         throw 'WebAuthn not supported on this browser.';
     }
@@ -35,8 +35,9 @@ let register = async (opts, info)=>{
         throw 'User Verifying Platform Authenticator not available.';
     }
     
-    const options = await _fetch('/auth/registerRequest', {opts, info});
-    
+    const options = await _fetch('/auth/registerRequest', opts);
+    console.log("hihihi");
+    console.log(options);
     options.user.id = base64url.decode(options.user.id);
     options.challenge = base64url.decode(options.challenge);
         
@@ -65,6 +66,67 @@ let register = async (opts, info)=>{
     return await _fetch('/auth/registerResponse' , credential);
 }
 
+let signin = async (opts) =>{
+  if (!window.PublicKeyCredential) {
+    console.info('WebAuthn not supported on this browser.');
+    return Promise.resolve(null)
+  } 
+
+  const UVPAA = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+  if (!UVPAA) {
+    console.info('User Verifying Platform Authenticator not available.');
+    return Promise.resolve(null);
+  }
+
+  let url = '/auth/signinRequest';
+  //const credId = localStorage.getItem(`credId`);
+  //if (credId) {
+  //  url += `?credId=${encodeURIComponent(credId)}`;
+  //}
+
+  const options = await _fetch(url, opts);
+  console.log(options);
+  if (options.allowCredentials.length === 0) {
+    console.info('No registered credentials found.');
+    return Promise.resolve(null);
+  }
+
+  options.challenge = base64url.decode(options.challenge);
+
+  for (let cred of options.allowCredentials) {
+    cred.id = base64url.decode(cred.id);
+  }
+
+  const cred = await navigator.credentials.get({
+    publicKey: options
+  });
+
+  const credential = {};
+  credential.id =     cred.id;
+  credential.type =   cred.type;
+  credential.rawId =  base64url.encode(cred.rawId);
+
+  if (cred.response) {
+    const clientDataJSON =
+      base64url.encode(cred.response.clientDataJSON);
+    const authenticatorData =
+      base64url.encode(cred.response.authenticatorData);
+    const signature =
+      base64url.encode(cred.response.signature);
+    const userHandle =
+      base64url.encode(cred.response.userHandle);
+    credential.response = {
+      clientDataJSON,
+      authenticatorData,
+      signature,
+      userHandle
+    };
+
+    console.log('hi');
+    return await _fetch(`/auth/signinResponse`, credential);
+  }
+}
+
 $(document).ready(()=>{
     $('#send').click(()=>{
         let id = $("#id").val();
@@ -77,15 +139,30 @@ $(document).ready(()=>{
             authenticatorSelection: {
               authenticatorAttachment: 'platform',
               userVerification: 'required'
-            }
-        }
-        let info = {
-              id: id,
-              username : username,
-              idPart1 : idNum1,
-              idPart2 : idNum2
+            },
+            id: id,
+            username : username,
+            idPart1 : idNum1,
+            idPart2 : idNum2
         }
 
-        register({opts, info});
+        register(opts);
+    });
+
+    $('#send2').click(()=>{
+      let id = $("#signin").val();
+
+      signin({id}).then(user => {
+        console.log(user);
+      if (user) {
+        location.href = '/home';
+      }
+        }).catch(e => {
+          console.error(e);
+          alert('Authentication failed. Use password to sign-in.');
+        });
     });
 });
+
+
+

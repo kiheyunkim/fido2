@@ -102,6 +102,102 @@ router.post('/removeKey', csrfCheck, sessionCheck, (req, res) => {
   res.json({});
 });
 
+router.get('/signout', (req, res) => {
+  // Remove cookies
+  res.clearCookie('username');
+  res.clearCookie('signed-in');
+  // Redirect to `/`
+  res.redirect(302, '/');
+});
+
+//이 밑으로는 공식 소스
+router.post('/registerRequest', /*csrfCheck, sessionCheck,*/ async (req, res) => {
+
+  const id = req.body.id;
+  const username = req.body.username;
+  const idPart1 = req.body.idPart1;
+  const idPart2 = req.body.idPart2;
+  //세션에 가입 요청한 id 기록
+  req.session.name = id; 
+  //ToDo: id 중복 검사 - 블록체인에서 검사할 것.
+  let checker = db.get('users')
+            .find({id:id})
+            .value();
+  
+  if(checker !== undefined && checker.credential !== undefined){
+    res.status(400).send({ error: "existed_id" });
+    return;
+  }
+
+  //본인 정보 중복 검사.
+  //ToDo: id 중복 검사 - 블록체인에서 검사할 것.
+  let checkInfo = db.get('users')
+                    .find({username:username, identity:(idPart1 + "-" + idPart2)})
+                    .value();
+  if(checkInfo !== undefined && checker.credential !== undefined){
+    res.status(400).send({ error: "existed_info" });
+    return;
+  }
+
+  let user = {
+    id:id,
+    username: username,
+    identity : (idPart1 + "-" + idPart2),
+    credential: undefined
+  }
+
+  try {
+    const response = await f2l.attestationOptions();
+    response.user = {
+      displayName: 'No name',
+      id: user.id,
+      name: user.username
+    };
+
+    response.challenge = coerceToBase64Url(response.challenge, 'challenge');
+    res.cookie('challenge', response.challenge);
+
+    response.pubKeyCredParams = [];
+    const params = [-7, -257];
+    for (let param of params) {
+      response.pubKeyCredParams.push({type:'public-key', alg: param});
+    }
+    const as = {}; // authenticatorSelection
+    const aa = req.body.authenticatorSelection.authenticatorAttachment;
+    const rr = req.body.authenticatorSelection.requireResidentKey;
+    const uv = req.body.authenticatorSelection.userVerification;
+    const cp = req.body.attestation; // attestationConveyancePreference
+    let asFlag = false;
+
+    if (aa && (aa == 'platform' || aa == 'cross-platform')) {
+      asFlag = true;
+      as.authenticatorAttachment = aa;
+    }
+    if (rr && typeof rr == 'boolean') {
+      asFlag = true;
+      as.requireResidentKey = rr;
+    }
+    if (uv && (uv == 'required' || uv == 'preferred' || uv == 'discouraged')) {
+      asFlag = true;
+      as.userVerification = uv;
+    }
+    if (asFlag) {
+      response.authenticatorSelection = as;
+    }
+    if (cp && (cp == 'none' || cp == 'indirect' || cp == 'direct')) {
+      response.attestation = cp;
+    }
+
+    db.get('users')
+    .push(user)
+    .write();
+
+    res.json(response);
+  } catch (e) {
+    res.status(400).send({ error: e });
+  }
+});
+
 router.post('/registerResponse', async (req, res) => {
   const id = req.session.name;
   const challenge = coerceToArrayBuffer(req.cookies.challenge, 'challenge');
@@ -152,8 +248,9 @@ router.post('/registerResponse', async (req, res) => {
 
     res.clearCookie('challenge');
 
+    console.log(user);
     // Respond with user info
-    res.json(user);
+    res.json({result:"ok"});
   } catch (e) {
     console.log(e);
     res.clearCookie('challenge');
@@ -161,172 +258,47 @@ router.post('/registerResponse', async (req, res) => {
   }
 });
 
-router.post('/signinRequest', csrfCheck, async (req, res) => {
+router.post('/signinRequest', async (req, res) => {
   try {
+    let id = req.body.id;
+    req.session.loginId = id;
+
     const user = db.get('users')
-    .find({ username: req.body.username })
+    .find({ id: id })
     .value();
    
-    
     if (!user) {
-      // Send empty response if user is not registered yet.
-      res.json({error: 'User not found.'});
+      res.json({error: '등록 되지 않은 아이디 입니다.'});
       return;
     }
 
-    const credId = req.query.credId;
     const response = await f2l.assertionOptions();
 
-    // const response = {};
     response.userVerification = req.body.userVerification || 'preferred';
     response.challenge = coerceToBase64Url(response.challenge, 'challenge');
     res.cookie('challenge', response.challenge);
 
     response.allowCredentials = [];
-    for (let cred of user.credentials) {
-      // When credId is not specified, or matches the one specified
-      if (!credId || cred.credId == credId) {
-        response.allowCredentials.push({
-          id: cred.credId,
-          type: 'public-key',
-          transports: ['internal']
-        });
-      }
-    }
+    response.allowCredentials.push({
+      id: user.credential.credId,
+      type: 'public-key',
+      transports: ['internal']
+    });
 
     res.json(response);
   } catch (e) {
+    console.log(e);
     res.status(400).json({ error: e });
   }
 });
 
-/**
- * Authenticate the user.
- * Input format:
- * ```{
-     id: String,
-     type: 'public-key',
-     rawId: String,
-     response: {
-       clientDataJSON: String,
-       authenticatorData: String,
-       signature: String,
-       userHandle: String
-     }
- * }```
- **/
-
-
-router.get('/signout', (req, res) => {
-  // Remove cookies
-  res.clearCookie('username');
-  res.clearCookie('signed-in');
-  // Redirect to `/`
-  res.redirect(302, '/');
-});
-
-
-//이 밑으로는 공식
-
- router.post('/registerRequest', /*csrfCheck, sessionCheck,*/ async (req, res) => {
-  const id = req.body.opts.info.id;
-  const username = req.body.opts.info.username;
-  const idPart1 = req.body.opts.info.idPart1;
-  const idPart2 = req.body.opts.info.idPart2;
-
-  //세션에 가입 요청한 id 기록
-  req.session.name = id; 
-  //ToDo: id 중복 검사 - 블록체인에서 검사할 것.
-  let checker = db.get('users')
-            .find({id:id})
-            .value();
-  
-  if(checker !== undefined && checker.credential !== undefined){
-    res.status(400).send({ error: "existed_id" });
-    return;
-  }
-
-  //본인 정보 중복 검사.
-  //ToDo: id 중복 검사 - 블록체인에서 검사할 것.
-  let checkInfo = db.get('users')
-                    .find({username:username, identity:(idPart1 + "-" + idPart2)})
-                    .value();
-  if(checkInfo !== undefined && checker.credential !== undefined){
-    res.status(400).send({ error: "existed_info" });
-    return;
-  }
-
-  let user = {
-    id:id,
-    username: username,
-    identity : (idPart1 + "-" + idPart2),
-    credential: undefined
-  }
-
-  try {
-    const response = await f2l.attestationOptions();
-    response.user = {
-      displayName: 'No name',
-      id: user.id,
-      name: user.username
-    };
-
-    response.challenge = coerceToBase64Url(response.challenge, 'challenge');
-    res.cookie('challenge', response.challenge);
-
-    response.pubKeyCredParams = [];
-    const params = [-7, -257];
-    for (let param of params) {
-      response.pubKeyCredParams.push({type:'public-key', alg: param});
-    }
-    const as = {}; // authenticatorSelection
-    const aa = req.body.opts.opts.authenticatorSelection.authenticatorAttachment;
-    const rr = req.body.opts.opts.authenticatorSelection.requireResidentKey;
-    const uv = req.body.opts.opts.authenticatorSelection.userVerification;
-    const cp = req.body.opts.opts.attestation; // attestationConveyancePreference
-    let asFlag = false;
-
-    if (aa && (aa == 'platform' || aa == 'cross-platform')) {
-      asFlag = true;
-      as.authenticatorAttachment = aa;
-    }
-    if (rr && typeof rr == 'boolean') {
-      asFlag = true;
-      as.requireResidentKey = rr;
-    }
-    if (uv && (uv == 'required' || uv == 'preferred' || uv == 'discouraged')) {
-      asFlag = true;
-      as.userVerification = uv;
-    }
-    if (asFlag) {
-      response.authenticatorSelection = as;
-    }
-    if (cp && (cp == 'none' || cp == 'indirect' || cp == 'direct')) {
-      response.attestation = cp;
-    }
-
-    db.get('users')
-    .push(user)
-    .write();
-
-    res.json(response);
-  } catch (e) {
-    res.status(400).send({ error: e });
-  }
-});
-
-router.post('/signinResponse', csrfCheck, async (req, res) => {
+router.post('/signinResponse', async (req, res) => {
   // Query the user
   const user = db.get('users')
-    .find({ username: req.cookies.username })
+    .find({ id: req.session.loginId })
     .value();
 
-  let credential = null;
-  for (let cred of user.credentials) {
-    if (cred.credId === req.body.id) {
-      credential = cred;
-    }
-  }
+  let credential = user.credential;
 
   try {
     if (!credential) {
