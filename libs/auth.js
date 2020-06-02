@@ -22,10 +22,9 @@ const { Fido2Lib } = require('fido2-lib');
 const { coerceToBase64Url,
         coerceToArrayBuffer
       } = require('fido2-lib/lib/utils');
+      
 const fs = require('fs');
-
 const low = require('lowdb');
-
 if (!fs.existsSync('./.data')) {
   fs.mkdirSync('./.data');
 }
@@ -33,9 +32,6 @@ if (!fs.existsSync('./.data')) {
 const FileSync = require('lowdb/adapters/FileSync');
 const adapter = new FileSync('.data/db.json');
 const db = low(adapter);
-
-router.use(express.json());
-
 
 const f2l = new Fido2Lib({
     timeout: 30*1000*60,
@@ -68,8 +64,6 @@ const sessionCheck = (req, res, next) => {
   }
   next();
 };
-
-
 
 router.post('/getKeys', csrfCheck, sessionCheck, (req, res) => {
   const user = db.get('users')
@@ -113,6 +107,7 @@ router.get('/signout', (req, res) => {
 //이 밑으로는 공식 소스
 router.post('/registerRequest', /*csrfCheck, sessionCheck,*/ async (req, res) => {
 
+  console.log(req.body);
   const id = req.body.id;
   const username = req.body.username;
   const idPart1 = req.body.idPart1;
@@ -145,7 +140,7 @@ router.post('/registerRequest', /*csrfCheck, sessionCheck,*/ async (req, res) =>
     identity : (idPart1 + "-" + idPart2),
     credential: undefined
   }
-
+  console.log(user);
   try {
     const response = await f2l.attestationOptions();
     response.user = {
@@ -192,6 +187,7 @@ router.post('/registerRequest', /*csrfCheck, sessionCheck,*/ async (req, res) =>
     .push(user)
     .write();
 
+    console.log(response);
     res.json(response);
   } catch (e) {
     res.status(400).send({ error: e });
@@ -284,8 +280,9 @@ router.post('/signinRequest', async (req, res) => {
       type: 'public-key',
       transports: ['internal']
     });
-
-    res.json(response);
+    res.writeHead(200, {'Content-Type': 'application/json; charset=utf-8'});
+    let arr = [response]
+    res.json(arr);
   } catch (e) {
     console.log(e);
     res.status(400).json({ error: e });
