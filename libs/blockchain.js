@@ -49,10 +49,40 @@ let init = async ()=>{
     
         return true;
     }catch(e){
-        console.log(e);
         return false;
     }
 }
+
+let getUserbyId = async (queryName) => {
+    try{
+        // Check to see if we've already enrolled the user.
+        const userExists = await wallet.exists('user1');
+        if (!userExists) {
+            console.log('An identity for the user "user1" does not exist in the wallet');
+            console.log('Run the registerUser.js application before retrying');
+            return {result:undefined};
+        }
+        console.log('hi1');
+        // Create a new gateway for connecting to our peer node.
+        const gateway = new Gateway();
+        await gateway.connect(ccpPath, { wallet, identity: 'user1', discovery: { enabled: true, asLocalhost: true } });
+ 
+        // Get the network (channel) our contract is deployed to.
+        const network = await gateway.getNetwork('mychannel');
+ 
+        // Get the contract from the network.
+        const contract = network.getContract('mydata2');
+ 
+        // Evaluate the specified transaction.   
+        const result = await contract.evaluateTransaction('queryMydata', `${queryName}`);
+        return {result:result.toString()};
+    }catch(e){
+        console.log('hi3');
+        console.log(e);
+        return {result:undefined};
+    }
+}
+
 
 let checkUserExist = async (queryName) => {
     try{
@@ -61,7 +91,7 @@ let checkUserExist = async (queryName) => {
         if (!userExists) {
             console.log('An identity for the user "user1" does not exist in the wallet');
             console.log('Run the registerUser.js application before retrying');
-            return;
+            return false;
         }
  
         // Create a new gateway for connecting to our peer node.
@@ -82,6 +112,35 @@ let checkUserExist = async (queryName) => {
         return false;
     }
 }
+
+let getAllUser=async()=>{
+    try{
+        // Check to see if we've already enrolled the user.
+        const userExists = await wallet.exists('user1');
+        if (!userExists) {
+            console.log('An identity for the user "user1" does not exist in the wallet');
+            console.log('Run the registerUser.js application before retrying');
+            return;
+        }
+ 
+        // Create a new gateway for connecting to our peer node.
+        const gateway = new Gateway();
+        await gateway.connect(ccpPath, { wallet, identity: 'user1', discovery: { enabled: true, asLocalhost: true } });
+        // Get the network (channel) our contract is deployed to.
+        const network = await gateway.getNetwork('mychannel');
+        // Get the contract from the network.
+        const contract = network.getContract('mydata2');
+        // Evaluate the specified transaction.   
+        const resultDoc = await contract.evaluateTransaction('queryAlldocdatas');
+        console.log(`Transaction has been evaluated, result is: ${resultDoc.toString()} `);
+        return {result:resultDoc.toString()};
+
+    }catch(e){
+        console.log(e);
+        return {result:undefined};
+    }
+}
+
 
 let add_member = async (ID, Name, ID_Number, HashKey)=>{
     try{
@@ -192,6 +251,7 @@ let get_doc=async(queryName)=>{
         console.log(`Transaction has been evaluated, result is: ${result.toString()} `);
         return {result:result.toString()};
     }catch(e){
+        console.log(e);
         return {result:"fail"};
     }
 }
@@ -204,4 +264,4 @@ let get_doc=async(queryName)=>{
 
 
 
-module.exports = {init, checkUserExist, add_member, change_Public_Key, change_Public_Key, add_doc, get_doc}
+module.exports = {init, getUserbyId, checkUserExist, getAllUser, add_member, change_Public_Key, change_Public_Key, add_doc, get_doc}

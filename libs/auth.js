@@ -63,11 +63,6 @@ let init = async ()=>{
 
 init();
 
-const low = require('lowdb');
-if (!fs.existsSync('./.data')) {
-  fs.mkdirSync('./.data');
-}
-
 const f2l = new Fido2Lib({
   timeout: 30*1000*60,
   rpId: process.env.HOSTNAME,
@@ -75,17 +70,6 @@ const f2l = new Fido2Lib({
   challengeSize: 32,
   cryptoParams: [-7]
 });
-
-const FileSync = require('lowdb/adapters/FileSync');
-const adapter = new FileSync('.data/db.json');
-const db = low(adapter);
-
-
-db.defaults({
-  users: []
-}).write();
-
-
 
 //OK
 //이 밑으로는 공식
@@ -99,21 +83,23 @@ db.defaults({
   //세션에 가입 요청한 id 기록
   req.session.name = id;
   //ToDo: id 중복 검사 - 블록체인에서 검사할 것.
-  let checker = db.get('users')
-                  .find({id:id})
-                  .value();
-
-  if(checker !== undefined){
+  if(await blockchain.checkUserExist(id)){
     res.status(400).send({ error: "existed_id" });
     return;
   }
 
   //본인 정보 중복 검사.
-  //ToDo: id 중복 검사 - 블록체인에서 검사할 것.
-  let checkInfo = db.get('users')
-                    .find({username:username, identity:(idPart1 + "-" + idPart2)})
-                    .value();
-  if(checkInfo !== undefined){
+  const identity = idPart1 + '-' + idPart2;
+  let isVerified = true;
+  let result = JSON.parse((await blockchain.getAllUser()).result);
+  result.forEach(element => {
+    if(element.ID_Number === identity){
+      isVerified = false;
+      return false;
+    }
+  });
+
+  if(!isVerified){
     res.status(400).send({ error: "existed_info" });
     return;
   }
@@ -121,7 +107,7 @@ db.defaults({
   let user = {
     id:id,
     username: username,
-    identity : (idPart1 + "-" + idPart2),
+    identity : identity,
     credential: ""
   }
   
@@ -167,10 +153,7 @@ db.defaults({
       response.attestation = cp;
     }
 
-    db.get('users')
-    .push(user)
-    .write();
-
+    await blockchain.add_member(id,username,identity,"");
     res.json(response);
   } catch (e) {
     res.status(400).send({ error: e });
@@ -213,16 +196,10 @@ router.post('/registerResponse', async (req, res) => {
       prevCounter: regResult.authnrData.get("counter")
     };
 
-    const user = db.get('users')
-      .find({ id: id })
-      .value();
-
-    user.credential = credential;
-
-    db.get('users')
-      .find({ id: id })
-      .assign(user)
-      .write();
+    let inputres = await blockchain.change_Public_Key(id,JSON.stringify(credential));
+    console.log(inputres);
+    let result = JSON.parse((await blockchain.getAllUser()).result);
+    console.log(result);
 
     res.json({result:"ok"});
 
@@ -240,14 +217,15 @@ router.post('/signinRequest', async (req, res) => {
     let id = req.body.id;
     req.session.name = id;
 
-    const user = db.get('users')
-    .find({ id: id })
-    .value();
-   
-    if (!user) {
+    let result = (await blockchain.getUserbyId(id)).result;
+
+    if(result === undefined){
       res.json({error: '등록 되지 않은 아이디 입니다.'});
-      return;
+      return;  
     }
+  
+    let user = JSON.parse(result);
+    let credential = JSON.parse(user.HashKey);
 
     const response = await f2l.assertionOptions();
 
@@ -256,7 +234,7 @@ router.post('/signinRequest', async (req, res) => {
 
     response.allowCredentials = [];
     response.allowCredentials.push({
-      id: user.credential.credId,
+      id: credential.credId,
       type: 'public-key',
       transports: ['internal']
     });
@@ -264,20 +242,27 @@ router.post('/signinRequest', async (req, res) => {
     console.log("로그인 요청 끝");
     res.json(response);
   } catch (e) {
-    console.log(e);
     res.status(400).json({ error: e });
   }
 });
 
 router.post('/signinResponse', async (req, res) => {
-  const user = db.get('users')
-    .find({ id: req.session.name })
-    .value();
+    let id = req.session.name;
+    let user = (await blockchain.getUserbyId(id)).result;
 
-  let credential = user.credential;
-  try {
-    if (!credential) {
-      throw 'Authenticating credential not found.';
+    if(user === undefined){
+      res.json({error: '등록 되지 않은 아이디 입니다.'});
+      return;  
+    }
+
+    user = JSON.parse(user);
+    console.log("user user");
+    console.log(user);
+    
+    try {
+      let credential = JSON.parse(user.HashKey);
+       if (!credential) {
+          throw 'Authenticating credential not found.';
     }
 
     const challenge = coerceToArrayBuffer(req.body.challenge, 'challenge');
@@ -300,19 +285,13 @@ router.post('/signinResponse', async (req, res) => {
       factor: "either",
       publicKey: credential.publicKey,
       prevCounter: credential.prevCounter,
-      userHandle: coerceToArrayBuffer(user.id, 'userHandle')
+      userHandle: coerceToArrayBuffer(id, 'userHandle')
     };
     const result = await f2l.assertionResult(clientAssertionResponse, assertionExpectations);
 
     credential.prevCounter = result.authnrData.get("counter");
 
-    db.get('users')
-      .find({ id: req.cookies.id })
-      .assign(user)
-      .write();
-
-    res.cookie('signed-in', 'yes');
-    res.json(user);
+    res.json({result:'ok'});
   } catch (e) {
     res.status(400).json({ error: e });
   }
