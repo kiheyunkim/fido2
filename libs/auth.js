@@ -83,7 +83,7 @@ const f2l = new Fido2Lib({
   //세션에 가입 요청한 id 기록
   req.session.name = id;
   //ToDo: id 중복 검사 - 블록체인에서 검사할 것.
-  if(await blockchain.checkUserExist(id)){
+  if(await blockchain.checkUserExist(id)) {
     res.status(400).send({ error: "existed_id" });
     return;
   }
@@ -290,8 +290,10 @@ router.post('/signinResponse', async (req, res) => {
     const result = await f2l.assertionResult(clientAssertionResponse, assertionExpectations);
 
     credential.prevCounter = result.authnrData.get("counter");
-
+    req.session.auth = true;
+    console.log(id + " : login OK");
     res.json({result:'ok'});
+
   } catch (e) {
     res.status(400).json({ error: e });
   }

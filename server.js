@@ -24,7 +24,7 @@ const app = express();
 const fs = require('fs');
 const session = require('express-session');
 const https = require('https');
-
+const fileGenerator = require('./file/fileGenerator');
 app.set('view engine', 'html');
 app.engine('html', hbs.__express);
 app.set('views', './views');
@@ -39,6 +39,7 @@ app.use(session({
   cookie: { secure: false }
 }));
 
+fileGenerator.generate('정영대사람새끼',"정킹대")
 
 app.use((req, res, next) => {
   if (req.get('x-forwarded-proto') &&

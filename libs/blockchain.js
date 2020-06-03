@@ -77,8 +77,6 @@ let getUserbyId = async (queryName) => {
         const result = await contract.evaluateTransaction('queryMydata', `${queryName}`);
         return {result:result.toString()};
     }catch(e){
-        console.log('hi3');
-        console.log(e);
         return {result:undefined};
     }
 }
@@ -136,7 +134,6 @@ let getAllUser=async()=>{
         return {result:resultDoc.toString()};
 
     }catch(e){
-        console.log(e);
         return {result:undefined};
     }
 }
