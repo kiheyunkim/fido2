@@ -20,14 +20,17 @@ const express = require('express');
 const cookieParser = require('cookie-parser');
 const hbs = require('hbs');
 const auth = require('./libs/auth');
+const fileRouter = require('./router/file');
+const fileRequestRouter = require('./router/fileRequest');
 const app = express();
 const fs = require('fs');
 const session = require('express-session');
 const https = require('https');
-const fileGenerator = require('./file/fileGenerator');
 app.set('view engine', 'html');
 app.engine('html', hbs.__express);
 app.set('views', './views');
+app.use('/file',fileRouter);
+app.use('/fileRequest',fileRequestRouter);
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({extended:true}));
@@ -39,7 +42,7 @@ app.use(session({
   cookie: { secure: false }
 }));
 
-fileGenerator.generate('정영대사람새끼',"정킹대")
+
 
 app.use((req, res, next) => {
   if (req.get('x-forwarded-proto') &&

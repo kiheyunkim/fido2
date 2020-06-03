@@ -1,7 +1,7 @@
-import express, { response } from 'express';
-import jsZip from 'jszip';
-import fs from 'fs';
-import sequelize from './../models/index';
+const express = require('express');
+const jsZip = require('jszip');
+const fs = require('fs');
+const sequelize = require('./../models/index');
 const router = express.Router();
 
 router.all('*',(request, response, next)=>{
@@ -19,7 +19,7 @@ router.get('/', async (request,response)=>{
         transaction = await sequelize.transaction();
 
         //1. 토큰 검색 
-        let token = request.body.token
+        let token = request.body.token;
         if(token === undefined){
             response.status(404).send("Error");
             return;
@@ -38,7 +38,7 @@ router.get('/', async (request,response)=>{
             pathes.push(papers.rows[i].dataValues.path);
         }
 
-        //3. 찾은 파일들 획득 - 시간이 오래 지난경우의 파일들 도 제외해야함- 아직 없음
+        //3. 찾은 파일들 획득 - 시간이 오래 지난경우의 파일들도 제외해야함- 아직 없음
         let file = [];
         pathes.forEach(path => {
             file.push(fs.readFileSync(path,{encoding:"UTF-8"}));

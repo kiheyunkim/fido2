@@ -1,4 +1,4 @@
-import {Model, DataTypes} from 'sequelize';
+const {Model, DataTypes} = require('sequelize');
 
 class Token extends Model{}
 
@@ -30,4 +30,4 @@ let addTokenModel = async (sequelize) => {
 
 }
 
-export {addTokenModel};
+module.exports = addTokenModel;

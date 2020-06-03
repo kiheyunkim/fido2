@@ -25,40 +25,11 @@ const fs = require('fs');
 const dotenv = require('dotenv');
 dotenv.config()
 
+const fileGenerator = require('./../file/fileGenerator');
+
 let init = async ()=>{
-  await blockchain.init();
-
-  if((await blockchain.checkUserExist('갓대1')).result === 'fail'){
-    console.log('해당 id 없음');
-  }else{
-    console.log('해당 id 있음');
-  }
-
-  await blockchain.add_member('갓대1','갓대','갓씨발대','1234');
-
-  if((await blockchain.checkUserExist('갓대1')).result === 'fail'){
-    console.log('해당 id 없음');
-  }else{
-    console.log('해당 id 있음');
-  }
-
-  await blockchain.change_Public_Key('갓대1','1234444444444');
-
-  console.log((await blockchain.checkUserExist('갓대1').result));
-  
-  if((await blockchain.get_doc('갓대1')).result === 'fail'){
-    console.log('해당 문서 없음');
-  }else{
-    console.log('해당 문사 있음');
-  }
-  
-  await blockchain.add_doc('갓대1','4','3','2','1');
-
-  if((await blockchain.get_doc('갓대2')).result === 'fail'){
-    console.log('해당 문서 없음');
-  }else{
-    console.log('해당 문사 있음');
-  }
+ let result = await fileGenerator.generate('정영대',"정킹대")
+ console.log(result);
 }
 
 init();
@@ -156,7 +127,7 @@ const f2l = new Fido2Lib({
     await blockchain.add_member(id,username,identity,"");
     res.json(response);
   } catch (e) {
-    res.status(400).send({ error: e });
+    res.status(400).json({ 'result': e });
   }
 });
 
@@ -196,16 +167,15 @@ router.post('/registerResponse', async (req, res) => {
       prevCounter: regResult.authnrData.get("counter")
     };
 
-    let inputres = await blockchain.change_Public_Key(id,JSON.stringify(credential));
-    console.log(inputres);
-    let result = JSON.parse((await blockchain.getAllUser()).result);
-    console.log(result);
-
-    res.json({result:"ok"});
+    await blockchain.change_Public_Key(id,JSON.stringify(credential));
+    let person = JSON.parse((await (await blockchain.getUserbyId(id))).result);
+    await fileGenerator.generate(id,person.Name);
+    
+    res.json({'result':"ok"});
 
   } catch (e) {
     req.session.name = undefined;
-    res.status(400).send({ error: e.message });
+    res.status(400).json({ 'result': e.message });
   }
   finally{
     req.session.name = undefined;
@@ -220,7 +190,7 @@ router.post('/signinRequest', async (req, res) => {
     let result = (await blockchain.getUserbyId(id)).result;
 
     if(result === undefined){
-      res.json({error: '등록 되지 않은 아이디 입니다.'});
+      res.json({result: '등록 되지 않은 아이디 입니다.'});
       return;  
     }
   
@@ -242,7 +212,7 @@ router.post('/signinRequest', async (req, res) => {
     console.log("로그인 요청 끝");
     res.json(response);
   } catch (e) {
-    res.status(400).json({ error: e });
+    res.status(400).json({ result: e });
   }
 });
 
@@ -251,7 +221,7 @@ router.post('/signinResponse', async (req, res) => {
     let user = (await blockchain.getUserbyId(id)).result;
 
     if(user === undefined){
-      res.json({error: '등록 되지 않은 아이디 입니다.'});
+      res.json({result: '등록 되지 않은 아이디 입니다.'});
       return;  
     }
 
@@ -292,10 +262,10 @@ router.post('/signinResponse', async (req, res) => {
     credential.prevCounter = result.authnrData.get("counter");
     req.session.auth = true;
     console.log(id + " : login OK");
-    res.json({result:'ok'});
+    res.json({'result':'ok'});
 
   } catch (e) {
-    res.status(400).json({ error: e });
+    res.status(400).json({'result': e });
   }
 });
 

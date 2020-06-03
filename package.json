@@ -18,8 +18,11 @@
     "fido2-lib": "agektmr/fido2-lib#android-compatible3",
     "hbs": "^4.0.4",
     "jquery": "^3.5.1",
+    "jszip": "^3.4.0",
     "lowdb": "^1.0.0",
-    "sequelize": "^5.21.11"
+    "mysql2": "^2.1.0",
+    "sequelize": "^5.21.11",
+    "sha256": "^0.2.0"
   },
   "engines": {
     "node": "12.x"
