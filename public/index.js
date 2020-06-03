@@ -36,10 +36,9 @@ let register = async (opts)=>{
     }
     
     const options = await _fetch('/auth/registerRequest', opts);
-    console.log("hihihi");
-    console.log(options);
     options.user.id = base64url.decode(options.user.id);
     options.challenge = base64url.decode(options.challenge);
+    console.log(options.challenge);
         
     const cred = await navigator.credentials.create({
         publicKey: options
@@ -49,6 +48,7 @@ let register = async (opts)=>{
     credential.id =     cred.id;
     credential.type =   cred.type;
     credential.rawId =  base64url.encode(cred.rawId);
+    credential.challenge = base64url.encode(options.challenge);
 
     if (cred.response) {
     const clientDataJSON =
@@ -60,9 +60,8 @@ let register = async (opts)=>{
             attestationObject
         };
     }
-    
-    localStorage.setItem(`credId`, credential.id);
 
+    console.log(credential.response);
     return await _fetch('/auth/registerResponse' , credential);
 }
 
@@ -79,10 +78,7 @@ let signin = async (opts) =>{
   }
 
   let url = '/auth/signinRequest';
-  //const credId = localStorage.getItem(`credId`);
-  //if (credId) {
-  //  url += `?credId=${encodeURIComponent(credId)}`;
-  //}
+  
 
   const options = await _fetch(url, opts);
   console.log(options);
@@ -105,6 +101,7 @@ let signin = async (opts) =>{
   credential.id =     cred.id;
   credential.type =   cred.type;
   credential.rawId =  base64url.encode(cred.rawId);
+  credential.challenge = base64url.encode(options.challenge);
 
   if (cred.response) {
     const clientDataJSON =
@@ -122,7 +119,6 @@ let signin = async (opts) =>{
       userHandle
     };
 
-    console.log('hi');
     return await _fetch(`/auth/signinResponse`, credential);
   }
 }

@@ -15,195 +15,86 @@
  * limitations under the License
  */
 const express = require('express');
-const session = require('express-session');
 const router = express.Router();
+const blockchain = require('./blockchain');
 const crypto = require('crypto');
 const { Fido2Lib } = require('fido2-lib');
-const { coerceToBase64Url,
-        coerceToArrayBuffer
-      } = require('fido2-lib/lib/utils');
+const { coerceToBase64Url, coerceToArrayBuffer} = require('fido2-lib/lib/utils');
       
 const fs = require('fs');
 const dotenv = require('dotenv');
 dotenv.config()
 
+let init = async ()=>{
+  await blockchain.init();
+
+  if((await blockchain.checkUserExist('갓대1')).result === 'fail'){
+    console.log('해당 id 없음');
+  }else{
+    console.log('해당 id 있음');
+  }
+
+  await blockchain.add_member('갓대1','갓대','갓씨발대','1234');
+
+  if((await blockchain.checkUserExist('갓대1')).result === 'fail'){
+    console.log('해당 id 없음');
+  }else{
+    console.log('해당 id 있음');
+  }
+
+  await blockchain.change_Public_Key('갓대1','1234444444444');
+
+  console.log((await blockchain.checkUserExist('갓대1').result));
+  
+  if((await blockchain.get_doc('갓대1')).result === 'fail'){
+    console.log('해당 문서 없음');
+  }else{
+    console.log('해당 문사 있음');
+  }
+  
+  await blockchain.add_doc('갓대1','4','3','2','1');
+
+  if((await blockchain.get_doc('갓대2')).result === 'fail'){
+    console.log('해당 문서 없음');
+  }else{
+    console.log('해당 문사 있음');
+  }
+}
+
+init();
 
 const low = require('lowdb');
 if (!fs.existsSync('./.data')) {
   fs.mkdirSync('./.data');
 }
 
+const f2l = new Fido2Lib({
+  timeout: 30*1000*60,
+  rpId: process.env.HOSTNAME,
+  rpName: "WebAuthn Codelab",
+  challengeSize: 32,
+  cryptoParams: [-7]
+});
+
 const FileSync = require('lowdb/adapters/FileSync');
 const adapter = new FileSync('.data/db.json');
 const db = low(adapter);
 
-const f2l = new Fido2Lib({
-    timeout: 30*1000*60,
-    rpId: process.env.HOSTNAME,
-    rpName: "WebAuthn Codelab",
-    challengeSize: 32,
-    cryptoParams: [-7]
-});
-
-
-console.log(process.env.ANDROID_SHA256HASH);
-console.log(process.env.ANDROID_PACKAGENAME);
 
 db.defaults({
   users: []
 }).write();
 
-const csrfCheck = (req, res, next) => {
-  if (req.header('X-Requested-With') != 'XMLHttpRequest') {
-    res.status(400).json({error: 'invalid access.'});
-    return;
-  }
-  next();
-};
-
-/**
- * Checks CSRF protection using custom header `X-Requested-With`
- * If cookie doesn't contain `username`, consider the user is not authenticated.
- **/
-const sessionCheck = (req, res, next) => {
-  if (!req.cookies['signed-in']) {
-    res.status(401).json({error: 'not signed in.'});
-    return;
-  }
-  next();
-};
-
-router.post('/getKeys', csrfCheck, sessionCheck, (req, res) => {
-  const user = db.get('users')
-    .find({ username: req.cookies.username })
-    .value();
-  res.json(user || {});
-});
-
-/**
- * Removes a credential id attached to the user
- * Responds with empty JSON `{}`
- **/
-router.post('/removeKey', csrfCheck, sessionCheck, (req, res) => {
-  const credId = req.query.credId;
-  const username = req.cookies.username;
-  const user = db.get('users')
-    .find({ username: username })
-    .value();
-
-  const newCreds = user.credentials.filter(cred => {
-    // Leave credential ids that do not match
-    return cred.credId !== credId;
-  });
-
-  db.get('users')
-    .find({ username: username })
-    .assign({ credentials: newCreds })
-    .write();
-
-  res.json({});
-});
 
 
-
-/**
- * Authenticate the user.
- * Input format:
- * ```{
-     id: String,
-     type: 'public-key',
-     rawId: String,
-     response: {
-       clientDataJSON: String,
-       authenticatorData: String,
-       signature: String,
-       userHandle: String
-     }
- * }```
- **/
-
-router.post('/signinResponse', csrfCheck, async (req, res) => {
-  // Query the user
-
-  const user = db.get('users')
-    .find({ username: req.cookies.username })
-    .value();
-
-  let credential = null;
-  for (let cred of user.credentials) {
-    if (cred.credId === req.body.id) {
-      credential = cred;
-    }
-  }
-
-  try {
-    if (!credential) {
-      throw 'Authenticating credential not found.';
-    }
-
-    const challenge = coerceToArrayBuffer(req.cookies.challenge, 'challenge');
-    const origin = `https://${req.get('host')}`; // TODO: Temporary work around for scheme
-
-    const clientAssertionResponse = { response: {} };
-    clientAssertionResponse.rawId =
-      coerceToArrayBuffer(req.body.rawId, "rawId");
-    clientAssertionResponse.response.clientDataJSON =
-      coerceToArrayBuffer(req.body.response.clientDataJSON, "clientDataJSON");
-    clientAssertionResponse.response.authenticatorData =
-      coerceToArrayBuffer(req.body.response.authenticatorData, "authenticatorData");
-    clientAssertionResponse.response.signature =
-      coerceToArrayBuffer(req.body.response.signature, "signature");
-    clientAssertionResponse.response.userHandle =
-      coerceToArrayBuffer(req.body.response.userHandle, "userHandle");
-    const assertionExpectations = {
-      challenge: challenge,
-      origin: origin,
-      factor: "either",
-      publicKey: credential.publicKey,
-      prevCounter: credential.prevCounter,
-      userHandle: coerceToArrayBuffer(user.id, 'userHandle')
-    };
-    const result = await f2l.assertionResult(clientAssertionResponse, assertionExpectations);
-
-    credential.prevCounter = result.authnrData.get("counter");
-
-    db.get('users')
-      .find({ id: req.cookies.id })
-      .assign(user)
-      .write();
-
-    res.clearCookie('challenge');
-    res.cookie('signed-in', 'yes');
-    res.json(user);
-  } catch (e) {
-    console.log(e);
-    res.clearCookie('challenge');
-    res.status(400).json({ error: e });
-  }
-});
-
-router.get('/signout', (req, res) => {
-  // Remove cookies
-  res.clearCookie('username');
-  res.clearCookie('signed-in');
-  // Redirect to `/`
-  res.redirect(302, '/');
-});
-
+//OK
 //이 밑으로는 공식
  router.post('/registerRequest', async (req, res) => {
-   console.log("register Start");
+
   const id = req.body.id;
   const username = req.body.username;
   const idPart1 = req.body.idPart1;
   const idPart2 = req.body.idPart2;
-
-  /*
-  if(idPart1.length !== 6 || idPart2.length !== 7 || !Number.isInteger(idPart1) || !Number.isInteger(idPart1)){
-    res.status(400).send({ error: "invalid_id" });
-    return;
-  }
-  */
 
   //세션에 가입 요청한 id 기록
   req.session.name = id;
@@ -231,9 +122,9 @@ router.get('/signout', (req, res) => {
     id:id,
     username: username,
     identity : (idPart1 + "-" + idPart2),
-    credential: undefined
+    credential: ""
   }
-  console.log(user);
+  
   try {
     const response = await f2l.attestationOptions();
     response.user = {
@@ -243,8 +134,8 @@ router.get('/signout', (req, res) => {
     };
 
     response.challenge = coerceToBase64Url(response.challenge, 'challenge');
-    res.cookie('challenge', response.challenge);
-
+    req.session.challenge = response.challenge;
+    
     response.pubKeyCredParams = [];
     const params = [-7, -257];
     for (let param of params) {
@@ -280,17 +171,15 @@ router.get('/signout', (req, res) => {
     .push(user)
     .write();
 
-    console.log(response);
     res.json(response);
   } catch (e) {
-    console.log(e);
     res.status(400).send({ error: e });
   }
 });
 
 router.post('/registerResponse', async (req, res) => {
   const id = req.session.name;
-  const challenge = coerceToArrayBuffer(req.cookies.challenge, 'challenge');
+  const challenge = coerceToArrayBuffer(req.body.challenge, 'challenge');
 
   try {
     const clientAttestationResponse = { response: {} };
@@ -317,7 +206,6 @@ router.post('/registerResponse', async (req, res) => {
     };
 
     const regResult = await f2l.attestationResult(clientAttestationResponse, attestationExpectations);
-
     const credential = {
       credId: coerceToBase64Url(regResult.authnrData.get("credId"), 'credId'),
       publicKey: regResult.authnrData.get("credentialPublicKeyPem"),
@@ -336,23 +224,21 @@ router.post('/registerResponse', async (req, res) => {
       .assign(user)
       .write();
 
-    res.clearCookie('challenge');
-
-    console.log(user);
-    // Respond with user info
     res.json({result:"ok"});
+
   } catch (e) {
-    console.log(e);
-    res.clearCookie('challenge');
+    req.session.name = undefined;
     res.status(400).send({ error: e.message });
+  }
+  finally{
+    req.session.name = undefined;
   }
 });
 
 router.post('/signinRequest', async (req, res) => {
-  console.log("로그인 요청");
   try {
     let id = req.body.id;
-    req.session.loginId = id;
+    req.session.name = id;
 
     const user = db.get('users')
     .find({ id: id })
@@ -367,7 +253,6 @@ router.post('/signinRequest', async (req, res) => {
 
     response.userVerification = req.body.userVerification || 'preferred';
     response.challenge = coerceToBase64Url(response.challenge, 'challenge');
-    res.cookie('challenge', response.challenge);
 
     response.allowCredentials = [];
     response.allowCredentials.push({
@@ -385,68 +270,51 @@ router.post('/signinRequest', async (req, res) => {
 });
 
 router.post('/signinResponse', async (req, res) => {
-
-  console.log(req.body);
-  // Query the user
   const user = db.get('users')
-    .find({ id: req.session.loginId })
+    .find({ id: req.session.name })
     .value();
 
   let credential = user.credential;
-
   try {
-    const clientAttestationResponse = { response: {} };
-    clientAttestationResponse.rawId =
-      coerceToArrayBuffer(req.body.rawId, "rawId");
-    clientAttestationResponse.response.clientDataJSON =
-      coerceToArrayBuffer(req.body.response.clientDataJSON, "clientDataJSON");
-    clientAttestationResponse.response.attestationObject =
-      coerceToArrayBuffer(req.body.response.attestationObject, "attestationObject");
-
-    let origin = '';
-    if (req.get('User-Agent').indexOf('okhttp') > -1) {
-      const octArray = process.env.ANDROID_SHA256HASH.split(':').map(h => parseInt(h, 16));
-      const androidHash = coerceToBase64Url(octArray, 'Android Hash');
-      origin = `android:apk-key-hash:${androidHash}`; // TODO: Generate
-    } else {
-      origin = `https://${req.get('host')}`;
+    if (!credential) {
+      throw 'Authenticating credential not found.';
     }
 
+    const challenge = coerceToArrayBuffer(req.body.challenge, 'challenge');
+    const origin = `https://${req.get('host')}`; // TODO: Temporary work around for scheme
 
-    const attestationExpectations = {
+    const clientAssertionResponse = { response: {} };
+    clientAssertionResponse.rawId =
+      coerceToArrayBuffer(req.body.rawId, "rawId");
+    clientAssertionResponse.response.clientDataJSON =
+      coerceToArrayBuffer(req.body.response.clientDataJSON, "clientDataJSON");
+    clientAssertionResponse.response.authenticatorData =
+      coerceToArrayBuffer(req.body.response.authenticatorData, "authenticatorData");
+    clientAssertionResponse.response.signature =
+      coerceToArrayBuffer(req.body.response.signature, "signature");
+    clientAssertionResponse.response.userHandle =
+      coerceToArrayBuffer(req.body.response.userHandle, "userHandle");
+    const assertionExpectations = {
       challenge: challenge,
       origin: origin,
-      factor: "either"
+      factor: "either",
+      publicKey: credential.publicKey,
+      prevCounter: credential.prevCounter,
+      userHandle: coerceToArrayBuffer(user.id, 'userHandle')
     };
+    const result = await f2l.assertionResult(clientAssertionResponse, assertionExpectations);
 
-    const regResult = await f2l.attestationResult(clientAttestationResponse, attestationExpectations);
-
-    const credential = {
-      credId: coerceToBase64Url(regResult.authnrData.get("credId"), 'credId'),
-      publicKey: regResult.authnrData.get("credentialPublicKeyPem"),
-      aaguid: coerceToBase64Url(regResult.authnrData.get("aaguid"), 'aaguid'),
-      prevCounter: regResult.authnrData.get("counter")
-    };
-
-    const user = db.get('users')
-      .find({ id: id })
-      .value();
-
-    user.credential = credential;
+    credential.prevCounter = result.authnrData.get("counter");
 
     db.get('users')
-      .find({ id: id })
+      .find({ id: req.cookies.id })
       .assign(user)
       .write();
 
-    res.clearCookie('challenge');
-
-    // Respond with user info
+    res.cookie('signed-in', 'yes');
     res.json(user);
   } catch (e) {
-    console.log(e);
-    res.clearCookie('challenge');
-    res.status(400).send({ error: e.message });
+    res.status(400).json({ error: e });
   }
 });
 
