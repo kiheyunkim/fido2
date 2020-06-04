@@ -1,2 +1,10 @@
 Your app is listening on port 443
 Your app is listening on port 443
+
+> fido2-codelab@0.0.1 start /root/kiheyunkim/fido2
+> node server.js
+
+Your app is listening on port 443
+false
+(node:3865) UnhandledPromiseRejectionWarning: Unhandled promise rejection (rejection id: 1): SequelizeConnectionRefusedError: connect ECONNREFUSED 127.0.0.1:3306
+(node:3865) [DEP0018] DeprecationWarning: Unhandled promise rejections are deprecated. In the future, promise rejections that are not handled will terminate the Node.js process with a non-zero exit code.

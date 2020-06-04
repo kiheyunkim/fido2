@@ -1,8 +1,8 @@
-const {Model, DataTypes} = require('sequelize');
+import { Model, DataTypes } from 'sequelize';
 
 class Token extends Model{}
 
-let addTokenModel = async (sequelize) => {
+let addTokenModel = (sequelize) => {
     Token.init({
         id: {
             type: DataTypes.INTEGER,
@@ -25,9 +25,6 @@ let addTokenModel = async (sequelize) => {
         sequelize,
         modelName:'token'
     });
-
-    await Token.sync();
-
 }
 
-module.exports = addTokenModel;
+export default addTokenModel;

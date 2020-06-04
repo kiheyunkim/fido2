@@ -2,31 +2,43 @@ const express = require('express');
 const sha256 = require('sha256');
 const path = require('path');
 const router = express.Router();
-const sequelize = require('./../models/index.js');
+const sequelize = require('./../models/index').default;
 
-router.all('*',(req,res,next)=>{
+/* router.all('*',(req,res,next)=>{
     if(!req.session.auth){
         res.status(404).send("forbidden");
     }else{
         next();
     }
-});
+}); */
 
 let paperList = ['documentA','documentB','documentC','documentD']
 
 router.get('/request', async (req,res)=>{
-    let documentTypes = req.body.types;
-    let requestId = req.session.signupId;
-    let token = sha256(Date.toString() + documentTypes + Date.toString());
+    console.log('in');
+    //let documentTypes = req.body.types;
+    //let requestId = req.session.signupId;
+    let requestId = 'email2';
 
-    documentTypes.array.forEach(element => {
+    let documentTypes=[1,3];
+    let token = sha256((new Date) + documentTypes +(new Date));
+
+    if(typeof documentTypes !== Array){
+        console.log(typeof documentTypes);
+    }
+
+    console.log(documentTypes);
+    let length = documentTypes.length;
+    for(let i=0;i<length;++i){
+        let element = documentTypes[i];
         if(Number.isInteger(element) && 1 <= parseInt(element) && parseInt(element) <= 4){
             let requestPaperType = paperList[parseInt(element) - 1];
-            //await sequelize.models.token.create({token:token, path:path.join(__dirname,"../file/",requestId,requestPaperType)});
+            await sequelize.models.token.create({token:token, path:path.join(__dirname,"../file/", requestId, requestPaperType)});
         }
-    });
+    }
+    console.log(token);
 
-    res.json({token:token});
+    res.json({token});
 });
 
 module.exports = router;

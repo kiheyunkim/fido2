@@ -1,38 +1,13 @@
-/*
- * @license
- * Copyright 2019 Google Inc. All rights reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     https://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License
- */
 const express = require('express');
 const router = express.Router();
 const blockchain = require('./blockchain');
-const crypto = require('crypto');
+const fileGenerator = require('./../file/fileGenerator')
 const { Fido2Lib } = require('fido2-lib');
 const { coerceToBase64Url, coerceToArrayBuffer} = require('fido2-lib/lib/utils');
       
 const fs = require('fs');
 const dotenv = require('dotenv');
-dotenv.config()
-
-const fileGenerator = require('./../file/fileGenerator');
-
-let init = async ()=>{
- let result = await fileGenerator.generate('정영대',"정킹대")
- console.log(result);
-}
-
-init();
+dotenv.config();
 
 const f2l = new Fido2Lib({
   timeout: 30*1000*60,
@@ -45,6 +20,9 @@ const f2l = new Fido2Lib({
 //OK
 //이 밑으로는 공식
  router.post('/registerRequest', async (req, res) => {
+
+  console.log("회원가입 시작");
+  console.log(req.body);
 
   const id = req.body.id;
   const username = req.body.username;
@@ -127,6 +105,7 @@ const f2l = new Fido2Lib({
     await blockchain.add_member(id,username,identity,"");
     res.json(response);
   } catch (e) {
+    console.log(e);
     res.status(400).json({ 'result': e });
   }
 });
@@ -134,6 +113,9 @@ const f2l = new Fido2Lib({
 router.post('/registerResponse', async (req, res) => {
   const id = req.session.name;
   const challenge = coerceToArrayBuffer(req.body.challenge, 'challenge');
+
+  console.log("회원가입 반응");
+  console.log(req.body);
 
   try {
     const clientAttestationResponse = { response: {} };
@@ -175,6 +157,7 @@ router.post('/registerResponse', async (req, res) => {
 
   } catch (e) {
     req.session.name = undefined;
+    console.log(e);
     res.status(400).json({ 'result': e.message });
   }
   finally{
@@ -185,6 +168,7 @@ router.post('/registerResponse', async (req, res) => {
 router.post('/signinRequest', async (req, res) => {
   try {
     let id = req.body.id;
+    console.log(req.body);
     req.session.name = id;
 
     let result = (await blockchain.getUserbyId(id)).result;
@@ -209,7 +193,6 @@ router.post('/signinRequest', async (req, res) => {
       transports: ['internal']
     });
 
-    console.log("로그인 요청 끝");
     res.json(response);
   } catch (e) {
     res.status(400).json({ result: e });

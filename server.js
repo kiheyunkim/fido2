@@ -20,7 +20,7 @@ const express = require('express');
 const cookieParser = require('cookie-parser');
 const hbs = require('hbs');
 const auth = require('./libs/auth');
-const fileRouter = require('./router/file');
+const fileRouter = require('./router/file').default;
 const fileRequestRouter = require('./router/fileRequest');
 const app = express();
 const fs = require('fs');
@@ -29,8 +29,6 @@ const https = require('https');
 app.set('view engine', 'html');
 app.engine('html', hbs.__express);
 app.set('views', './views');
-app.use('/file',fileRouter);
-app.use('/fileRequest',fileRequestRouter);
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({extended:true}));
@@ -120,6 +118,8 @@ app.get('/.well-known/assetlinks.json', (req, res) => {
 });
 
 app.use('/auth', auth);
+app.use('/file',fileRouter);
+app.use('/fileRequest',fileRequestRouter);
 
 // listen for req :)
 const port = process.env.GLITCH_DEBUGGER ? null : 443;
