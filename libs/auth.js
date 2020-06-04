@@ -244,7 +244,9 @@ router.post('/signinResponse', async (req, res) => {
 
     credential.prevCounter = result.authnrData.get("counter");
     req.session.auth = true;
+    req.session.authId = id;
     console.log(id + " : login OK");
+    
     res.json({'result':'ok'});
 
   } catch (e) {

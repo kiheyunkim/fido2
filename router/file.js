@@ -1,16 +1,19 @@
 import { Router } from 'express';
+const router = Router();
 import jsZip from 'jszip';
 import { readFileSync } from 'fs';
 import sequelize from './../models/index';
-const router = Router();
 
 router.get('/', async (request,response)=>{
+    console.log('in file');
+
+    console.log(request.query);
     let transaction = null;
     try {
         transaction = await sequelize.transaction();
 
         //1. 토큰 검색 
-        let token = 'cfccba25be812d506b7a9a68d6774b630cf8ffa3f18d4180361511d06cb64e9c'//request.body.token;
+        let token = request.query.token;
         if(token === undefined){
             response.status(404).send("Error");
             return;
@@ -44,7 +47,6 @@ router.get('/', async (request,response)=>{
         }
     
         let result = await zip.generateAsync({type:"nodebuffer"});
-        await sequelize.models.token.destroy({where:{token:token}, transaction});
         response.setHeader("Content-Type","application/zip");
         response.send(result);
     } catch (error) {

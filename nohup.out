@@ -8,3 +8,144 @@ Your app is listening on port 443
 false
 (node:3865) UnhandledPromiseRejectionWarning: Unhandled promise rejection (rejection id: 1): SequelizeConnectionRefusedError: connect ECONNREFUSED 127.0.0.1:3306
 (node:3865) [DEP0018] DeprecationWarning: Unhandled promise rejections are deprecated. In the future, promise rejections that are not handled will terminate the Node.js process with a non-zero exit code.
+
+> fido2-codelab@0.0.1 start /root/kiheyunkim/fido2
+> babel-node server.js
+
+Your app is listening on port 443
+{ id: 'email2' }
+hi1
+{ id: 'email2' }
+hi1
+hi1
+user user
+{ docType: 'docdata',
+  Name: '이름ㅇ',
+  ID_Number: '123456-1534567',
+  HashKey: '{"credId":"Af6TY33nmp7iBZ45GZ3lkhNeqcgr6259_xW01Ua1BIivfuDDtD6Mlj339VVNARo4AKCGmMYjPuYJjOYqrGCnRN4","publicKey":"-----BEGIN PUBLIC KEY-----\\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEHBY1sVwEKICq57ZpkzYzLP7RYsWX\\nKt5Ajy5VB85C4Rcv2/iTa7oy/OlOH79IpYs65pcnbzqHn8EK8NAdInUU7A==\\n-----END PUBLIC KEY-----\\n","aaguid":"AAAAAAAAAAAAAAAAAAAAAA","prevCounter":0}' }
+userHandle emailw
+email2 : login OK
+{ id: 'email2' }
+hi1
+{ id: 'email2' }
+hi1
+{ id: 'email2' }
+hi1
+hi1
+user user
+{ docType: 'docdata',
+  Name: '이름ㅇ',
+  ID_Number: '123456-1534567',
+  HashKey: '{"credId":"Af6TY33nmp7iBZ45GZ3lkhNeqcgr6259_xW01Ua1BIivfuDDtD6Mlj339VVNARo4AKCGmMYjPuYJjOYqrGCnRN4","publicKey":"-----BEGIN PUBLIC KEY-----\\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEHBY1sVwEKICq57ZpkzYzLP7RYsWX\\nKt5Ajy5VB85C4Rcv2/iTa7oy/OlOH79IpYs65pcnbzqHn8EK8NAdInUU7A==\\n-----END PUBLIC KEY-----\\n","aaguid":"AAAAAAAAAAAAAAAAAAAAAA","prevCounter":0}' }
+userHandle emailw
+email2 : login OK
+{ id: 'email2' }
+hi1
+{ id: 'email2' }
+hi1
+hi1
+user user
+{ docType: 'docdata',
+  Name: '이름ㅇ',
+  ID_Number: '123456-1534567',
+  HashKey: '{"credId":"Af6TY33nmp7iBZ45GZ3lkhNeqcgr6259_xW01Ua1BIivfuDDtD6Mlj339VVNARo4AKCGmMYjPuYJjOYqrGCnRN4","publicKey":"-----BEGIN PUBLIC KEY-----\\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEHBY1sVwEKICq57ZpkzYzLP7RYsWX\\nKt5Ajy5VB85C4Rcv2/iTa7oy/OlOH79IpYs65pcnbzqHn8EK8NAdInUU7A==\\n-----END PUBLIC KEY-----\\n","aaguid":"AAAAAAAAAAAAAAAAAAAAAA","prevCounter":0}' }
+userHandle emailw
+email2 : login OK
+{ id: 'email2' }
+hi1
+{ id: 'email2' }
+hi1
+hi1
+user user
+{ docType: 'docdata',
+  Name: '이름ㅇ',
+  ID_Number: '123456-1534567',
+  HashKey: '{"credId":"Af6TY33nmp7iBZ45GZ3lkhNeqcgr6259_xW01Ua1BIivfuDDtD6Mlj339VVNARo4AKCGmMYjPuYJjOYqrGCnRN4","publicKey":"-----BEGIN PUBLIC KEY-----\\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEHBY1sVwEKICq57ZpkzYzLP7RYsWX\\nKt5Ajy5VB85C4Rcv2/iTa7oy/OlOH79IpYs65pcnbzqHn8EK8NAdInUU7A==\\n-----END PUBLIC KEY-----\\n","aaguid":"AAAAAAAAAAAAAAAAAAAAAA","prevCounter":0}' }
+userHandle emailw
+email2 : login OK
+{ id: 'email2' }
+hi1
+{ id: 'email2' }
+hi1
+{ id: 'email2' }
+hi1
+hi1
+user user
+{ docType: 'docdata',
+  Name: '이름ㅇ',
+  ID_Number: '123456-1534567',
+  HashKey: '{"credId":"Af6TY33nmp7iBZ45GZ3lkhNeqcgr6259_xW01Ua1BIivfuDDtD6Mlj339VVNARo4AKCGmMYjPuYJjOYqrGCnRN4","publicKey":"-----BEGIN PUBLIC KEY-----\\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEHBY1sVwEKICq57ZpkzYzLP7RYsWX\\nKt5Ajy5VB85C4Rcv2/iTa7oy/OlOH79IpYs65pcnbzqHn8EK8NAdInUU7A==\\n-----END PUBLIC KEY-----\\n","aaguid":"AAAAAAAAAAAAAAAAAAAAAA","prevCounter":0}' }
+userHandle emailw
+email2 : login OK
+{ id: 'email2' }
+hi1
+{ id: 'email2' }
+hi1
+hi1
+user user
+{ docType: 'docdata',
+  Name: '이름ㅇ',
+  ID_Number: '123456-1534567',
+  HashKey: '{"credId":"Af6TY33nmp7iBZ45GZ3lkhNeqcgr6259_xW01Ua1BIivfuDDtD6Mlj339VVNARo4AKCGmMYjPuYJjOYqrGCnRN4","publicKey":"-----BEGIN PUBLIC KEY-----\\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEHBY1sVwEKICq57ZpkzYzLP7RYsWX\\nKt5Ajy5VB85C4Rcv2/iTa7oy/OlOH79IpYs65pcnbzqHn8EK8NAdInUU7A==\\n-----END PUBLIC KEY-----\\n","aaguid":"AAAAAAAAAAAAAAAAAAAAAA","prevCounter":0}' }
+userHandle emailw
+email2 : login OK
+{ id: 'email2' }
+hi1
+{ id: 'email2' }
+hi1
+hi1
+user user
+{ docType: 'docdata',
+  Name: '이름ㅇ',
+  ID_Number: '123456-1534567',
+  HashKey: '{"credId":"Af6TY33nmp7iBZ45GZ3lkhNeqcgr6259_xW01Ua1BIivfuDDtD6Mlj339VVNARo4AKCGmMYjPuYJjOYqrGCnRN4","publicKey":"-----BEGIN PUBLIC KEY-----\\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEHBY1sVwEKICq57ZpkzYzLP7RYsWX\\nKt5Ajy5VB85C4Rcv2/iTa7oy/OlOH79IpYs65pcnbzqHn8EK8NAdInUU7A==\\n-----END PUBLIC KEY-----\\n","aaguid":"AAAAAAAAAAAAAAAAAAAAAA","prevCounter":0}' }
+userHandle emailw
+email2 : login OK
+{ id: 'email2' }
+hi1
+{ id: 'email2' }
+hi1
+hi1
+user user
+{ docType: 'docdata',
+  Name: '이름ㅇ',
+  ID_Number: '123456-1534567',
+  HashKey: '{"credId":"Af6TY33nmp7iBZ45GZ3lkhNeqcgr6259_xW01Ua1BIivfuDDtD6Mlj339VVNARo4AKCGmMYjPuYJjOYqrGCnRN4","publicKey":"-----BEGIN PUBLIC KEY-----\\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEHBY1sVwEKICq57ZpkzYzLP7RYsWX\\nKt5Ajy5VB85C4Rcv2/iTa7oy/OlOH79IpYs65pcnbzqHn8EK8NAdInUU7A==\\n-----END PUBLIC KEY-----\\n","aaguid":"AAAAAAAAAAAAAAAAAAAAAA","prevCounter":0}' }
+userHandle emailw
+email2 : login OK
+{ id: 'email2' }
+hi1
+{ id: 'email2' }
+hi1
+hi1
+user user
+{ docType: 'docdata',
+  Name: '이름ㅇ',
+  ID_Number: '123456-1534567',
+  HashKey: '{"credId":"Af6TY33nmp7iBZ45GZ3lkhNeqcgr6259_xW01Ua1BIivfuDDtD6Mlj339VVNARo4AKCGmMYjPuYJjOYqrGCnRN4","publicKey":"-----BEGIN PUBLIC KEY-----\\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEHBY1sVwEKICq57ZpkzYzLP7RYsWX\\nKt5Ajy5VB85C4Rcv2/iTa7oy/OlOH79IpYs65pcnbzqHn8EK8NAdInUU7A==\\n-----END PUBLIC KEY-----\\n","aaguid":"AAAAAAAAAAAAAAAAAAAAAA","prevCounter":0}' }
+userHandle emailw
+email2 : login OK
+{ id: 'email2' }
+hi1
+{ id: 'email2' }
+hi1
+hi1
+user user
+{ docType: 'docdata',
+  Name: '이름ㅇ',
+  ID_Number: '123456-1534567',
+  HashKey: '{"credId":"Af6TY33nmp7iBZ45GZ3lkhNeqcgr6259_xW01Ua1BIivfuDDtD6Mlj339VVNARo4AKCGmMYjPuYJjOYqrGCnRN4","publicKey":"-----BEGIN PUBLIC KEY-----\\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEHBY1sVwEKICq57ZpkzYzLP7RYsWX\\nKt5Ajy5VB85C4Rcv2/iTa7oy/OlOH79IpYs65pcnbzqHn8EK8NAdInUU7A==\\n-----END PUBLIC KEY-----\\n","aaguid":"AAAAAAAAAAAAAAAAAAAAAA","prevCounter":0}' }
+userHandle emailw
+email2 : login OK
+{ id: 'email2' }
+hi1
+{ id: 'email2' }
+hi1
+hi1
+user user
+{ docType: 'docdata',
+  Name: '이름ㅇ',
+  ID_Number: '123456-1534567',
+  HashKey: '{"credId":"Af6TY33nmp7iBZ45GZ3lkhNeqcgr6259_xW01Ua1BIivfuDDtD6Mlj339VVNARo4AKCGmMYjPuYJjOYqrGCnRN4","publicKey":"-----BEGIN PUBLIC KEY-----\\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEHBY1sVwEKICq57ZpkzYzLP7RYsWX\\nKt5Ajy5VB85C4Rcv2/iTa7oy/OlOH79IpYs65pcnbzqHn8EK8NAdInUU7A==\\n-----END PUBLIC KEY-----\\n","aaguid":"AAAAAAAAAAAAAAAAAAAAAA","prevCounter":0}' }
+userHandle emailw
+email2 : login OK
